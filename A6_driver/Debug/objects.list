@@ -1,4 +1,6 @@
 "./Src/a6_driver.o"
+"./Src/a6_lib.o"
+"./Src/fifo.o"
 "./Src/main.o"
 "./Src/syscalls.o"
 "./Src/sysmem.o"

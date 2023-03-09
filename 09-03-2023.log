@@ -1,0 +1,61 @@
+RDY
+
++CPIN: READY
+
+SMS DONE
+
+PB DONEA6 Initzialization...
+DEBUG_INFO: a6_get_module_name function called
+ATI
+ATI
+Manufacturer: SIMCOM INCORPORATED
+Model: SIMCOM_SIM7600CE-T
+Revision: SIM7600M22_V1.1
+IMEI: 862195052560955
++GCAP: +CGSM
+
+OK
+A6 Initzialization...
+DEBUG_INFO: a6_get_module_name function called
+ATI
+ATI
+Manufacturer: SIMCOM INCORPORATED
+Model: SIMCOM_SIM7600CE-T
+Revision: SIM7600M22_V1.1
+IMEI: 862195052560955
++GCAP: +CGSM
+
+OK
+DEBUG_INFO: a6_get_module_name function success
+DEBUG_INFO: a6_get_sim_state function called
+AT+CPIN?
+AT+CPIN?
++CPIN: READY
+
+OK
+DEBUG_INFO: a6_get_sim_state function success
+DEBUG_INFO: a6_get_network_registration function called
+AT+CREG=?
+AT+CREG=?
++CREG: (0-2)
+
+OK
+DEBUG_INFO: a6_get_network_registration success
+DEBUG_INFO: a6_get_signal_quality function called
+AT+CSQ=?
+AT+CSQ=?
++CSQ: (0-31,99),(0-7,99)
+
+OK
+DEBUG_INFO: a6_get_signal_quality success
+DEBUG_INFO: a6_send_sms function called
+AT+CMGF=1
+AT+CMGF=1
+OK
+AT+CMGS="3318609739"
+AT+CMGS="3318609739"
+> Hello from remote STM32 MachineHello from remote STM32 Machine
+
++CMGS: 8
+
+OK
