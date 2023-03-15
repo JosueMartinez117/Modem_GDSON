@@ -1,0 +1,8 @@
+C:\Users\HP\Documents\MCUXpressoIDE_11.6.0_8187\workspace\frdmk64f_freertos_uart\CMSIS/core_cm4.h:1679:22:__NVIC_EnableIRQ	16	static
+C:\Users\HP\Documents\MCUXpressoIDE_11.6.0_8187\workspace\frdmk64f_freertos_uart\CMSIS/core_cm4.h:1770:22:__NVIC_ClearPendingIRQ	16	static
+C:\Users\HP\Documents\MCUXpressoIDE_11.6.0_8187\workspace\frdmk64f_freertos_uart\CMSIS/core_cm4.h:1809:22:__NVIC_SetPriority	16	static
+C:\Users\HP\Documents\MCUXpressoIDE_11.6.0_8187\workspace\frdmk64f_freertos_uart\drivers/fsl_common_arm.h:499:24:EnableIRQ	24	static
+../source/freertos_uart.c:42:13:tx_task	24	static
+../source/freertos_uart.c:58:13:rx_task	16	static
+../source/freertos_uart.c:74:6:UART0_RX_TX_IRQHandler	16	static
+../source/freertos_uart.c:117:5:main	32	static
