@@ -1,157 +1,167 @@
+/*
+ * Copyright (c) 2023, Dorian Martinez and Josue Martinez
+ * GDSON Project - MEXICO
+ * All rights reserved.
+ *
+ */
+
+/* FreeRTOS kernel includes. */
 #include "FreeRTOS.h"
 #include "task.h"
+#include "queue.h"
+#include "timers.h"
+
+/* Freescale includes. */
 #include "fsl_device_registers.h"
 #include "fsl_debug_console.h"
-#include "fsl_uart.h"
+#include "pin_mux.h"
+#include "clock_config.h"
 #include "board.h"
-#include "semphr.h"
+#include "fsl_uart_freertos.h"
+#include "fsl_uart.h"
+#include <stdbool.h>
+#include "A7_modem.h"
+/*******************************************************************************
+ * Definitions
+ ******************************************************************************/
+#define uart_modem_task_PRIORITY (configMAX_PRIORITIES - 1)
+/*******************************************************************************
+ * Prototypes
+ ******************************************************************************/
+static void modem_task(void *pvParameters);
+void modem_uart_init();
+/*******************************************************************************
+ * Variables
+ ******************************************************************************/
+volatile bool success_command = false;
 
-#define TX_TASK_STACK_SIZE 512
-#define RX_TASK_STACK_SIZE 512
-
-#define TX_TASK_PRIORITY 4
-#define RX_TASK_PRIORITY 3
-
-#define UART_BAUDRATE 115200
-#define UART_CLK_FREQ CLOCK_GetFreq(kCLOCK_CoreSysClk)
-//kCLOCK_CoreSysClk
-//kCLOCK_FlexBusClk
-
-// Define the UART interrupt priority
-#define UART0_IRQ_PRIO (configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY + 1)
-//#define UART1_IRQ_PRIO (configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY + 1)
-
-// Define the UART instance and buffer size
-#define UART_INSTANCE UART0
-//#define UART_INSTANCE UART1
-
-#define BUFFER_SIZE 10
-
-// Define the message to be sent
-static volatile bool rxUartInterrupt = false;
-static volatile bool txUartInterrupt = false;
-const char *message = "ATI\r\n";
-const char *message_2 = "AT+COPS?\r\n";
-SemaphoreHandle_t xSemaphore;
-
-// Define the receive buffer and index
-uint8_t rx_buffer[BUFFER_SIZE];
-volatile uint32_t rx_index = 0;
-
-// UART TX task
-static void tx_task(void *pvParameters) {
-
-    while (1) {
-    	if(txUartInterrupt){
-            /* Wait for the semaphore to become available */
-            xSemaphoreTake(xSemaphore, portMAX_DELAY);
-    		// Send message through UART
-            UART_WriteBlocking(UART_INSTANCE, (const uint8_t *)message, strlen(message));
-            vTaskDelay(pdMS_TO_TICKS(1000));
-            txUartInterrupt=false;
-    	}
-
-    }
-}
-
-// UART RX task
-static void rx_task(void *pvParameters) {
-    while (1) {
-    	if(rxUartInterrupt){
-        // Wait for UART receive interrupt
-        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
-
-        // Print received message
-        PRINTF("Received message: %s\r\n", rx_buffer);
-        rx_index = 0;
-        rxUartInterrupt=false;
-    	}
-    }
-}
-
-// UART receive interrupt handler
-//void UART1_RX_TX_IRQHandler(void)
-void UART0_RX_TX_IRQHandler(void) {
-
-	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-	uint32_t status_flags = UART_GetStatusFlags(UART_INSTANCE);
-
-	// Check if the receive data register is full
-    /*if ((kUART_RxDataRegFullFlag | kUART_RxOverrunFlag) & UART_GetStatusFlags(UART0)) {
-
-    	  // Read the received byte
-          uint8_t data = UART_ReadByte(UART_INSTANCE);
-
-          // Check if the receive buffer is full
-          if (rx_index >= BUFFER_SIZE - 1) {
-              rx_index = 0;
-          }
-
-          // Add the received byte to the buffer
-          rx_buffer[rx_index++] = data;
-
-          // Notify the receive task
-          vTaskNotifyGiveFromISR(NULL, pdTRUE);
-          rxUartInterrupt = true;
-    }*/
-
-
-	/*
-	 * checks if the transmit data register is empty by checking the
-	 * UART_S1_TDRE_MASK flag in the UART status register.
-	 *
-	 * */
-	 if (UART_INSTANCE->S1 & UART_S1_TDRE_MASK){
-    	txUartInterrupt = true;
-
-    	UART_ClearStatusFlags(UART_INSTANCE, kUART_TxDataRegEmptyInterruptEnable);
-    	xSemaphoreGiveFromISR(xSemaphore, &xHigherPriorityTaskWoken);
-
-      	//UART_DisableInterrupts(UART1, kUART_TxDataRegEmptyInterruptEnable);
-      	//DisableIRQ(UART1_RX_TX_IRQn);
-    }
-
-	 portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-}
-
-int main(void) {
-    // Initialize the board
-    BOARD_InitPins();
-    BOARD_BootClockRUN();
+/*******************************************************************************
+ * Code
+ ******************************************************************************/
+/*!
+ * @brief Application entry point.
+ */
+int main(void)
+{
+    /* Init board hardware. */
+    BOARD_InitBootPins();
+    BOARD_InitBootClocks();
     BOARD_InitDebugConsole();
 
-    // Initialize the UART
-    uart_config_t uartConfig;
-    UART_GetDefaultConfig(&uartConfig);
-    uartConfig.baudRate_Bps = UART_BAUDRATE;
-    UART_Init(UART_INSTANCE, &uartConfig, UART_CLK_FREQ);
+    PRINTF("##############################################\r\n");
+    PRINTF("GDSON PROTOTYPE v1.0\r\n");
+    PRINTF("DORIAN MARTINEZ AND JOSUE MARTINEZ\r\n");
+    PRINTF("MEXICO, JALISCO 20/03/2023\r\n");
+    PRINTF("##############################################\r\n");
 
-    /*Create Semaphore*/
-    xSemaphore = xSemaphoreCreateBinary();
-
-    // Enable the UART interrupt
-    UART_EnableInterrupts(UART_INSTANCE, kUART_TxDataRegEmptyInterruptEnable);
-    NVIC_SetPriority(UART0_RX_TX_IRQn, UART0_IRQ_PRIO);
-    NVIC_ClearPendingIRQ(UART0_RX_TX_IRQn);
-    EnableIRQ(UART0_RX_TX_IRQn);
-
-    //Interrupciones UART1
-    /*UART_EnableInterrupts(UART_INSTANCE, kUART_TxDataRegEmptyInterruptEnable);
-    NVIC_SetPriority(UART1_RX_TX_IRQn, UART1_IRQ_PRIO);
-    NVIC_ClearPendingIRQ(UART1_RX_TX_IRQn);
-    EnableIRQ(UART1_RX_TX_IRQn);*/
-
-
-    // Create the TX task
-    xTaskCreate(tx_task, "TX Task", TX_TASK_STACK_SIZE, NULL, TX_TASK_PRIORITY, NULL);
-
-    // Create the RX task
-    xTaskCreate(rx_task, "RX Task", RX_TASK_STACK_SIZE, NULL, RX_TASK_PRIORITY, NULL);
-
-
-    // Start the scheduler
+    if (xTaskCreate(modem_task, "Modem_task", (configMINIMAL_STACK_SIZE + 100)*2, NULL, uart_modem_task_PRIORITY, NULL) != pdPASS)
+    {
+        PRINTF("Task creation failed!.\r\n");
+        while (1)
+            ;
+    }
     vTaskStartScheduler();
-
-    // Should not reach here
-    return 0;
+    for (;;)
+        ;
 }
+
+/*!
+ * @brief Task responsible for loopback.
+ */
+static void modem_task(void *pvParameters)
+{
+
+    modem_uart_init();
+    send_at_commands(MODEM_OPERATING_MODE, MODEM_CMD_QUERY, MODEM_PARAM_EMPTY);
+    send_at_commands(MODEM_OPERATING_MODE, MODEM_CMD_SET, MODEM_SET_OFF);
+    send_at_commands(MODEM_OPERATING_MODE, MODEM_CMD_SET, MODEM_SET_ON);
+    send_at_commands(MODEM_GET_PLMN, MODEM_CMD_QUERY, MODEM_PARAM_EMPTY);
+    send_at_commands(MODEM_SIM_STATUS, MODEM_CMD_QUERY, MODEM_PARAM_EMPTY);
+    UART_RTOS_Deinit(&modem_handle);
+    vTaskSuspend(NULL);
+}
+
+/*
+ * Initialize UART modem to send AT commands.
+ *
+ */
+
+void modem_uart_init(){
+
+	PRINTF("DEBUG INFO: modem_uart_init: \r\n");
+	NVIC_SetPriority(MODEM_UART_RX_TX_IRQn, 5);
+    uart_modem_config.srcclk = MODEM_UART_CLK_FREQ;
+    uart_modem_config.base   = MODEM_UART;
+    if (kStatus_Success == UART_RTOS_Init(&modem_handle, &t_modem_handle, &uart_modem_config))
+    {
+    	PRINTF("DEBUG INFO: modem_uart_init success\r\n");
+    }else{
+    	PRINTF("DEBUG INFO: modem_uart_init internal failure\r\n");
+    	vTaskSuspend(NULL);
+    }
+
+}
+
+/*
+ * Function to use AT commands to query or set.
+ */
+
+void send_at_commands(const char * cmd, char type, const char * params)
+{
+
+	PRINTF("DEBUG INFO: send_at_commands: \r\n");
+
+	command_t at_command;
+    size_t cmd_len = strlen(cmd);
+    size_t params_len = strlen(params);
+    char *send_enter_key = "\r\n";
+
+    /*Assign memory to command and parameter*/
+    at_command.command = (uint8_t*) malloc(cmd_len + 1);
+    at_command.parameter = (uint8_t*) malloc(params_len + 1);
+
+    /*Copy the characters string from cmd and params to the elements of the structure*/
+    memcpy(at_command.command, cmd, cmd_len + 1);
+    memcpy(at_command.parameter, params, params_len + 1);
+
+    /*Print the values of the command and parameters for debugging*/
+    PRINTF("DEBUG INFO: Request Command: %s\n\r", at_command.command);
+    PRINTF("DEBUG INFO: Parameter: %s\n\r", at_command.parameter);
+
+    /*Assign memory for full command to combine AT command and parameters*/
+    char* at_full_command = (char*) malloc(cmd_len + params_len + 2);
+
+    if(type == MODEM_CMD_SET){
+    	PRINTF("DEBUG INFO: MODEM_CMD_SET: \r\n");
+        sprintf(at_full_command, "%s=%s", at_command.command, at_command.parameter);
+        at_command.padded_len = strlen(at_full_command);
+        PRINTF("DEBUG INFO: AT full command: %s\n\r", at_full_command);
+    }
+    if(type == MODEM_CMD_QUERY){
+    	PRINTF("DEBUG INFO: MODEM_CMD_QUERY: \r\n");
+        sprintf(at_full_command, "%s%s?", at_command.command, at_command.parameter);
+        at_command.padded_len = strlen(at_full_command);
+        PRINTF("DEBUG INFO: AT full command: %s\n\r", at_full_command);
+    }
+    if(type == MODEM_CMD_SEND_SMS)
+    {
+    	PRINTF("DEBUG INFO: MODEM_CMD_SEND_SMS: \r\n");
+    	PRINTF("DEBUG INFO: WORK IN PROGRES - NOT IMPLEMENTED\r\n");
+    }
+
+	if(kStatus_Success == UART_RTOS_Send(&modem_handle, (uint8_t *)at_full_command, at_command.padded_len))
+	{
+		UART_RTOS_Send(&modem_handle, (uint8_t *)send_enter_key, strlen(send_enter_key));
+		PRINTF("DEBUG INFO: %s send success\r\n",at_full_command);
+	}
+
+
+    /*Release memory for all variables*/
+    free(at_command.command);
+    free(at_command.parameter);
+    free(at_full_command);
+
+}
+
+
+

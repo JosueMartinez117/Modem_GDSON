@@ -59,16 +59,6 @@ BOARD_InitPins:
  * END ****************************************************************************************************************/
 void BOARD_InitPins(void)
 {
-
-	/*UART1*/
-	CLOCK_EnableClock(kCLOCK_PortC);
-	//RX UART1 -PTC3 (pin 73)
-	PORT_SetPinMux(PORTC, 3U, kPORT_MuxAlt3);
-	//TX UART2 -PTC4 (pin 76)
-	PORT_SetPinMux(PORTC, 4U, kPORT_MuxAlt3);
-
-	/*UART0*/
-
     /* Port B Clock Gate Control: Clock enabled */
     CLOCK_EnableClock(kCLOCK_PortB);
 
@@ -78,19 +68,31 @@ void BOARD_InitPins(void)
     /* PORTB17 (pin 63) is configured as UART0_TX */
     PORT_SetPinMux(PORTB, 17U, kPORT_MuxAlt3);
 
+    /* Port B Clock Gate Control: Clock enabled */
+	CLOCK_EnableClock(kCLOCK_PortC);
+
+	/* PORTC3 (pin 73) is configured as UART1_RX */
+	    PORT_SetPinMux(PORTC, 3U, kPORT_MuxAlt3);
+
+	    /* PORTC4 (pin 76) is configured as UART1_TX */
+	    PORT_SetPinMux(PORTC, 4U, kPORT_MuxAlt3);
+
+		/* PORTC16 (pin 90) is configured as UART3_RX */
+		PORT_SetPinMux(PORTC, 16U, kPORT_MuxAlt3);
+
+		/* PORTC16 (pin 91) is configured as UART3_RX */
+		PORT_SetPinMux(PORTC, 17U, kPORT_MuxAlt3);
+
     SIM->SOPT5 = ((SIM->SOPT5 &
                    /* Mask bits to zero which are setting */
-                   (~(SIM_SOPT5_UART0TXSRC_MASK)))
+                   (~(SIM_SOPT5_UART0TXSRC_MASK | SIM_SOPT5_UART1TXSRC_MASK)))
 
                   /* UART 0 transmit data source select: UART0_TX pin. */
-                  | SIM_SOPT5_UART0TXSRC(SOPT5_UART0TXSRC_UART_TX));
+                  | SIM_SOPT5_UART0TXSRC(SOPT5_UART0TXSRC_UART_TX)
 
-    // Configurar fuente de datos de transmisión UART1_TX
-    SIM->SOPT5 = ((SIM->SOPT5 &
-                   /* Mask bits to zero which are setting */
-                   (~(SIM_SOPT5_UART1TXSRC_MASK)))
-                  /* UART 1 transmit data source select: UART1_TX pin. */
-                  | SIM_SOPT5_UART1TXSRC(SOPT5_UART1TXSRC_UART_TX));
+				  /* UART 1 transmit data source select: UART1_TX pin. */
+				  | SIM_SOPT5_UART1TXSRC(SOPT5_UART1TXSRC_UART_TX));
+
 }
 /***********************************************************************************************************************
  * EOF
