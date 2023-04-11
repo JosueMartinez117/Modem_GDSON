@@ -27,7 +27,8 @@
 /*******************************************************************************
  * Buffer Definitions
  ******************************************************************************/
-#define MODEM_RX_BUFFER_LEN 512
+#define MODEM_RX_BUFFER_LEN 100
+#define MODEM_RX_LISTEN_ATTEMPTS 75
 
 /*******************************************************************************
  * MODEM COMMON RESPONSES
@@ -39,20 +40,24 @@ const char R_READY[] = "READY";
 /*******************************************************************************
  * MODEM AT SIM7600CE COMMANDS
  ******************************************************************************/
-const char MODEM_TEST[] 		=   "AT";			//Test UART communication
-const char MODEM_RESET[]		=   "AT+CRESET";  //Reset the A7 modem
-const char MODEM_VERSION[]  	=	"AT+GMR";     //View A7 modem info
-const char MODEM_SIM_STATUS[] 	=	"AT+CPIN";	//SIM state
-const char MODEM_GET_PLMN[]		= 	"AT+COPS";    //PLMN name and access network technology
-const char MODEM_OPERATING_MODE[] = "AT+CFUN";    //Current modem operating mode state
-const char MODEM_SMS_TEXT_FORMAT[] = "AT+CMGF";
+const char MODEM_ECHO_DISABLED[] 	= 	"ATE0";		//Disable Echo command from modem
+const char MODEM_ECHO_ENABLED[]		=	"ATE";		//Enables Echo command from modem
+const char MODEM_TEST[] 			=   "AT";			//Test UART communication
+const char MODEM_RESET[]			=   "AT+CRESET";  //Reset the A7 modem
+const char MODEM_VERSION[]  		=	"AT+GMR";     //View A7 modem info
+const char MODEM_SIM_STATUS[] 		=	"AT+CPIN";	//SIM state
+const char MODEM_GET_PLMN[]			= 	"AT+COPS";    //PLMN name and access network technology
+const char MODEM_OPERATING_MODE[] 	= 	"AT+CFUN";    //Current modem operating mode state
+const char MODEM_SMS_TEXT_FORMAT[] 	= 	"AT+CMGF";
 const char MODEM_SET_ON[] = "1";
 const char MODEM_SET_OFF[] = "0";
 const char MODEM_PARAM_EMPTY[] = ""; //Used only for queries
+
 /*MODEM Command type*/
 typedef enum modem_command_type {
 	MODEM_CMD_QUERY,
 	MODEM_CMD_SET,
+	MODEM_CMD_EXECUTE,
 	MODEM_CMD_SEND_SMS
 }modem_command_type;
 
@@ -61,6 +66,15 @@ typedef struct command_t{
 	uint8_t* parameter;
 	size_t padded_len;
 }command_t;
+
+typedef enum  {
+	MODEM_CMD_BAD = -5,
+	MODEM_RSP_MEMORY_ERR = -4,
+	MODEM_RSP_FAIL = -3,
+	MODEM_RSP_UNKNOWN = -2,
+	MODEM_RSP_TIMEOUT = -1,
+	MODEM_RSP_SUCCESS = 0
+}modem_command_rsp;
 
 /*******************************************************************************
  * UART MODEM SETTINGS

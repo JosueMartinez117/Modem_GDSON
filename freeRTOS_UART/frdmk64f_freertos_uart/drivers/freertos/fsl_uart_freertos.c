@@ -315,7 +315,9 @@ int UART_RTOS_Receive(uart_rtos_handle_t *handle, uint8_t *buffer, uint32_t leng
     }
 
     /* New transfer can be performed only after current one is finished */
-    if (pdFALSE == xSemaphoreTake(handle->rxSemaphore, portMAX_DELAY))
+    /*if (pdFALSE == xSemaphoreTake(handle->rxSemaphore, pdMS_TO_TICKS(10000)))*/
+    /*if (pdFALSE == xSemaphoreTake(handle->rxSemaphore, portMAX_DELAY))*/
+    if (pdFALSE == xSemaphoreTake(handle->rxSemaphore, pdMS_TO_TICKS(20000)))
     {
         /* We could not take the semaphore, exit with 0 data received */
         return kStatus_Fail;
@@ -334,7 +336,7 @@ int UART_RTOS_Receive(uart_rtos_handle_t *handle, uint8_t *buffer, uint32_t leng
 
     ev = xEventGroupWaitBits(handle->rxEvent,
                              RTOS_UART_COMPLETE | RTOS_UART_RING_BUFFER_OVERRUN | RTOS_UART_HARDWARE_BUFFER_OVERRUN,
-                             pdTRUE, pdFALSE, portMAX_DELAY);
+                             pdTRUE, pdFALSE, pdMS_TO_TICKS(20000));
     if ((ev & RTOS_UART_HARDWARE_BUFFER_OVERRUN) != 0U)
     {
         /* Stop data transfer to application buffer, ring buffer is still active */

@@ -1,5 +1,9 @@
 C:\Users\HP\Documents\MCUXpressoIDE_11.6.0_8187\workspace\frdmk64f_freertos_uart\CMSIS/core_cm4.h:1809:22:__NVIC_SetPriority	16	static
-../source/freertos_uart.c:44:5:main	16	static
-../source/freertos_uart.c:71:13:modem_task	16	static
-../source/freertos_uart.c:89:6:modem_uart_init	8	static
-../source/freertos_uart.c:109:6:send_at_commands	56	static
+../source/freertos_uart.c:47:5:main	16	static
+../source/freertos_uart.c:75:13:modem_task	16	static
+../source/freertos_uart.c:108:6:modem_uart_init	8	static
+../source/freertos_uart.c:128:6:send_at_commands	56	static
+../source/freertos_uart.c:195:6:readByteToBuffer	24	static
+../source/freertos_uart.c:246:6:clear_modem_buffer	8	static
+../source/freertos_uart.c:253:5:check_modem_result	24	static
+../source/freertos_uart.c:272:6:get_modem_response_uart	16	static
